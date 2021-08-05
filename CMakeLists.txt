@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 
-if(NOT DEFINED ${CMAKE_CUDA_ARCHITECTURES})
-    set(CMAKE_CUDA_ARCHITECTURES 75 86)
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86)
 endif()
-message(STATUS "CUDA architectures set to ${CMAKE_CUDA_ARCHITECTURES}")
+#message(STATUS "CUDA architectures set to ${CMAKE_CUDA_ARCHITECTURES}")
 
 project(cuda_benchmark LANGUAGES CXX CUDA)
 
@@ -14,7 +14,16 @@ set(CMAKE_CUDA_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 find_package(CUDA REQUIRED)
-add_subdirectory(external/fmt)
+
+# Setup some vars for CPM packages:
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
+include(CPM)
+
+CPMAddPackage(
+  NAME fmt
+  GITHUB_REPOSITORY fmtlib/fmt
+  GIT_TAG 7.1.3
+)
 
 add_library(cuda_benchmark)
 target_sources(cuda_benchmark

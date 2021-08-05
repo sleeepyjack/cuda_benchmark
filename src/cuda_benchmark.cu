@@ -4,17 +4,16 @@
 
 #include "cuda_benchmark.h"
 
-#include "fmt/format.h"
+#include "../include/cuda_benchmark.h"
 #include "fmt/color.h"
 #include "fmt/core.h"
-#include "../external/fmt/include/fmt/color.h"
-#include "../include/cuda_benchmark.h"
+#include "fmt/format.h"
 
 namespace cuda_benchmark
 {
 
 warp_intervals::warp_intervals (temporal_threads_intervals thread_intervals)
-  : warps_count (thread_intervals.threads_count / warp_size)
+    : warps_count (thread_intervals.threads_count / warp_size)
 {
   intervals.resize (warps_count);
   sm_ids.resize (warps_count);
@@ -25,12 +24,10 @@ warp_intervals::warp_intervals (temporal_threads_intervals thread_intervals)
 
   for (unsigned int wid = 0; wid < warps_count; wid++)
     {
-      const unsigned long long int min_clk_begin = *std::min_element (
-          thread_clk_begin, thread_clk_begin + warp_size);
-      const unsigned long long int max_clk_end = *std::max_element (
-          thread_clk_end, thread_clk_end + warp_size);
+      const unsigned long long int min_clk_begin = *std::min_element (thread_clk_begin, thread_clk_begin + warp_size);
+      const unsigned long long int max_clk_end = *std::max_element (thread_clk_end, thread_clk_end + warp_size);
 
-      intervals[wid] = { min_clk_begin, max_clk_end };
+      intervals[wid] = {min_clk_begin, max_clk_end};
       sm_ids[wid] = thread_sm_id[0];
 
       thread_clk_begin += warp_size;
@@ -42,10 +39,7 @@ warp_intervals::warp_intervals (temporal_threads_intervals thread_intervals)
 void warp_intervals::store (std::ostream &os)
 {
   for (unsigned int wid = 0; wid < warps_count; wid++)
-    os << wid << ", "
-       << sm_ids[wid] << ", "
-       << intervals[wid].first << ", "
-       << intervals[wid].second << "\n";
+    os << wid << ", " << sm_ids[wid] << ", " << intervals[wid].first << ", " << intervals[wid].second << "\n";
 }
 
 /**
@@ -97,31 +91,58 @@ controller::~controller ()
   fmt::print ("Run on ");
   fmt::print (fmt::fg (fmt::color::yellow_green), "{0}\n", prop.name);
 
-  const auto longest_name_size = std::max (std::max_element (results.begin (), results.end (), [] (const result &a, const result &b) {
-    return a.benchmark_name.size () < b.benchmark_name.size ();
-  })->benchmark_name.size (), 20ul);
-  const auto longest_clock_size = std::max (std::to_string (std::max_element (results.begin (), results.end (), [] (const result &a, const result &b) {
-    return std::to_string (a.latency).size () < std::to_string (b.latency).size ();
-  })->latency).size (), std::string("Latency (clk)").size ());
-  const auto longest_time_size = std::max (fmt::format ("{:.2f}", clk_to_t (std::max_element (results.begin (), results.end (), [peak_clk] (const result &a, const result &b) {
-    return fmt::format ("{:.2f}", clk_to_t (a.latency, peak_clk)).size () < fmt::format ("{:.2f}", clk_to_t (b.latency, peak_clk)).size ();
-  })->latency, peak_clk)).size (), std::string ("Latency (ns)").size ());
-  const auto longest_throughtput_size = std::max (std::to_string (std::max_element (results.begin (), results.end (), [] (const result &a, const result &b) {
-    return fmt::format ("{:.6f}", a.throughput).size () < fmt::format ("{:.6f}", b.throughput).size ();
-  })->throughput).size (), std::string ("Throughput (ops/clk)").size ());
+  const auto longest_name_size = std::max (
+      std::max_element (
+          results.begin (), results.end (),
+          [] (const result &a, const result &b) { return a.benchmark_name.size () < b.benchmark_name.size (); })
+          ->benchmark_name.size (),
+      20ul);
+  const auto longest_clock_size = std::max (
+      std::to_string (std::max_element (
+                          results.begin (), results.end (),
+                          [] (const result &a, const result &b) {
+                            return std::to_string (a.latency).size () < std::to_string (b.latency).size ();
+                          })
+                          ->latency)
+          .size (),
+      std::string ("Latency (clk)").size ());
+  const auto longest_time_size = std::max (
+      fmt::format (
+          "{:.2f}", clk_to_t (
+                        std::max_element (
+                            results.begin (), results.end (),
+                            [peak_clk] (const result &a, const result &b) {
+                              return fmt::format ("{:.2f}", clk_to_t (a.latency, peak_clk)).size () <
+                                     fmt::format ("{:.2f}", clk_to_t (b.latency, peak_clk)).size ();
+                            })
+                            ->latency,
+                        peak_clk))
+          .size (),
+      std::string ("Latency (ns)").size ());
+  const auto longest_throughtput_size = std::max (
+      std::to_string (std::max_element (
+                          results.begin (), results.end (),
+                          [] (const result &a, const result &b) {
+                            return fmt::format ("{:.6f}", a.throughput).size () <
+                                   fmt::format ("{:.6f}", b.throughput).size ();
+                          })
+                          ->throughput)
+          .size (),
+      std::string ("Throughput (ops/clk)").size ());
 
-  fmt::print ("{0:<{1}} {2:<{3}}    {4:<{5}}    {6:<{7}}    {8}\n",
-    "Benchmark", longest_name_size,
-    "Latency (ns)", longest_time_size,
-    "Latency (clk)", longest_clock_size,
-    "Throughput (ops/clk)", longest_throughtput_size, "Operations");
-  for (const auto &result: results)
+  fmt::print (
+      "{0:<{1}} {2:<{3}}    {4:<{5}}    {6:<{7}}    {8}\n", "Benchmark", longest_name_size, "Latency (ns)",
+      longest_time_size, "Latency (clk)", longest_clock_size, "Throughput (ops/clk)", longest_throughtput_size,
+      "Operations");
+  for (const auto &result : results)
     {
-      fmt::print (fmt::fg (fmt::color::green),  "{0:<{1}} ", result.benchmark_name, longest_name_size);
-      fmt::print (fmt::fg (fmt::color::orange), "{0:>{1}.2f}    ", clk_to_t (result.latency, peak_clk), longest_time_size);
+      fmt::print (fmt::fg (fmt::color::green), "{0:<{1}} ", result.benchmark_name, longest_name_size);
+      fmt::print (
+          fmt::fg (fmt::color::orange), "{0:>{1}.2f}    ", clk_to_t (result.latency, peak_clk), longest_time_size);
       fmt::print (fmt::fg (fmt::color::orange), "{0:>{1}}    ", result.latency, longest_clock_size);
       fmt::print (fmt::fg (fmt::color::orange), "{0:>{1}.6f}    ", result.throughput, longest_throughtput_size);
-      fmt::print (fmt::fg (fmt::color::orange), "{0} ({1})\n", result.operations, result.operations * default_block_size);
+      fmt::print (
+          fmt::fg (fmt::color::orange), "{0} ({1})\n", result.operations, result.operations * default_block_size);
     }
 }
 
@@ -129,7 +150,8 @@ void controller::receive_results (size_t elements) const
 {
   cudaMemcpy (host_clk_begin.get (), device_clk_begin, elements * sizeof (unsigned long long), cudaMemcpyDeviceToHost);
   cudaMemcpy (host_clk_end.get (), device_clk_end, elements * sizeof (unsigned long long), cudaMemcpyDeviceToHost);
-  cudaMemcpy (host_iterations.get (), device_iterations, elements * sizeof (unsigned long long), cudaMemcpyDeviceToHost);
+  cudaMemcpy (
+      host_iterations.get (), device_iterations, elements * sizeof (unsigned long long), cudaMemcpyDeviceToHost);
   cudaMemcpy (host_sm_ids.get (), device_sm_ids, elements * sizeof (unsigned int), cudaMemcpyDeviceToHost);
 }
 
@@ -143,11 +165,11 @@ unsigned long long int controller::get_min_latency (size_t elements) const
     {
       const size_t first_element = i;
       const size_t last_element = std::min (first_element + default_block_size, elements);
-      const unsigned long long int tb_min_clk_begin = *std::min_element (
-          host_clk_begin.get () + first_element, host_clk_begin.get () + last_element);
+      const unsigned long long int tb_min_clk_begin =
+          *std::min_element (host_clk_begin.get () + first_element, host_clk_begin.get () + last_element);
 
-      const unsigned long long int tb_max_clk_end = *std::max_element (
-          host_clk_end.get () + first_element, host_clk_end.get () + last_element);
+      const unsigned long long int tb_max_clk_end =
+          *std::max_element (host_clk_end.get () + first_element, host_clk_end.get () + last_element);
 
       min_latency = std::min (min_latency, tb_max_clk_end - tb_min_clk_begin);
     }
@@ -164,9 +186,9 @@ void controller::process_measurements (
 
   const auto mean_latency = latency_interval / operations;
   const auto mean_throughput =
-      static_cast<float>(operations * default_block_size) / static_cast<float> (throughput_interval);
+      static_cast<float> (operations * default_block_size) / static_cast<float> (throughput_interval);
 
   results.emplace_back (std::move (name), mean_latency, mean_throughput, operations);
 }
 
-}
+} // namespace cuda_benchmark
